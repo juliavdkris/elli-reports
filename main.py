@@ -80,6 +80,7 @@ def generate_report(entry: Entry, template: str, output_dir: str) -> None:
 	}
 	doc.render(context)
 	doc.save(f'{output_dir}/{entry.new_id}.docx')
+	print(f'[*] Generated report for {entry.new_id} ({entry.student_name})')
 
 
 if __name__ == '__main__':
