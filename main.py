@@ -4,12 +4,16 @@ from dataclasses import dataclass
 from typing import Optional
 
 SPREADSHEET = 'original/PersRep_Data Pseud.xlsx'
-TEMPLATE = 'original/PersonalizedReport_DraftV6.docx'
+TEMPLATE = 'original/template.docx'
+OUTPUT_DIR = 'out'
 
 
 @dataclass
 class Entry:
 	new_id: str
+	student_name: str
+	student_email: str
+	student_id: str
 	course: str
 	eb1: Optional[float]
 	mean_eb1_total: Optional[float]
@@ -46,11 +50,38 @@ class Entry:
 
 
 # Parse every row in the sheet as an Entry object
-def parse_sheet_entries(filename) -> list[Entry]:
+def parse_sheet_entries(filename: str) -> list[Entry]:
 	wb = openpyxl.load_workbook(filename)
 	sheet = wb[wb.sheetnames[0]]
-	# student_identification = wb['student_identification']
-	return [Entry(*row[:-1]) for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row, values_only=True)] # type: ignore
+	student_identification = wb['student_identification']
+
+	entries: list[Entry] = []
+	for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row, values_only=True):
+		for sid in student_identification.iter_rows(min_row=2, max_row=student_identification.max_row, values_only=True):
+			if row[0] == sid[3]:
+				new_id = sid[3]
+				student_name = sid[0]
+				student_email = sid[1]
+				student_id = sid[2]
+				entries.append(Entry(*[new_id, student_name, student_email, student_id, *row[1:-1]])) # type: ignore
+		else:
+			print(f'[!] No identification found for {row[0]}')
+	return entries
 
 
-print(parse_sheet_entries(SPREADSHEET)[0])
+def generate_report(entry: Entry, template: str, output_dir: str) -> None:
+	doc = DocxTemplate(template)
+	context = {
+		'new_id': entry.new_id,
+		'student_name': entry.student_name,
+		'student_email': entry.student_email,
+		'student_id': entry.student_id,
+		'course': entry.course,
+	}
+	doc.render(context)
+	doc.save(f'{output_dir}/{entry.new_id}.docx')
+
+
+if __name__ == '__main__':
+	for entry in parse_sheet_entries(SPREADSHEET):
+		generate_report(entry, TEMPLATE, OUTPUT_DIR)
