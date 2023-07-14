@@ -4,21 +4,31 @@ from odf.table import Table, TableRows, TableRow, TableCell
 from pprint import pprint
 
 
-if __name__ == '__main__':
-	doc = load('original/template.odt')
-
+# Maybe TODO: deal with cells that don't have a direct value, but e.g. a child element with text
+def dump_all_charts(doc: OpenDocument) -> list[list[list[str]]]:
 	charts = [obj for obj in doc.childobjects if obj.getMediaType() == 'application/vnd.oasis.opendocument.chart']
-	pprint(charts)
+	return [[[cell.getAttribute('value') for cell in row.getElementsByType(TableCell)] for row in chart.getElementsByType(TableRow)] for chart in charts]
 
-	print('###')
+def dump_chart(doc: OpenDocument, index: int) -> list[list[str]]:
+	chart = [obj for obj in doc.childobjects if obj.getMediaType() == 'application/vnd.oasis.opendocument.chart'][index]
+	return [[str(cell) for cell in row.getElementsByType(TableCell)] for row in chart.getElementsByType(TableRow)]
 
-	for chart in charts:
-		rows = chart.getElementsByType(TableRow)
-		for row in rows:
-			for cell in row.getElementsByType(TableCell):
-				print(cell)
-		print('---')
+def write_chart(doc: OpenDocument, index: int, data: list[list[str]]) -> None:
+	chart = [obj for obj in doc.childobjects if obj.getMediaType() == 'application/vnd.oasis.opendocument.chart'][index]
+	for row, new_row in zip(chart.getElementsByType(TableRow), data):
+		for cell, new_value in zip(row.getElementsByType(TableCell), new_row):
+			if len(cell.attributes) >= 2 and cell.getAttribute('value') != new_value:
+				# TODO: also edit the text value
+				cell.setAttribute('value', new_value)
+	doc.save('original/template2.odt')
 
-	# rows = c.element_dict[('urn:oasis:names:tc:opendocument:xmlns:table:1.0', 'table-rows')]
 
-	pass
+if __name__ == '__main__':
+	doc = load('original/template2.odt')
+
+	pprint(dump_all_charts(doc))
+
+	# data = dump_chart(doc, 0)
+	# pprint(data)
+	# data[0][0] = 'Hello'
+	# write_chart(doc, 0, data)
