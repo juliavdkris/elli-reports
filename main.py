@@ -1,5 +1,7 @@
 import openpyxl
+from docx import Document
 from docxtpl import DocxTemplate
+
 from dataclasses import dataclass
 from typing import Optional
 
@@ -56,6 +58,9 @@ def parse_sheet_entries(filename: str) -> list[Entry]:
 	student_identification = wb['student_identification']
 
 	entries: list[Entry] = []
+
+	# Join the two sheets together on the student_id column
+	# A lil sketchy but ¯\_(ツ)_/¯
 	for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row, values_only=True):
 		for sid in student_identification.iter_rows(min_row=2, max_row=student_identification.max_row, values_only=True):
 			if row[0] == sid[3]:
@@ -80,6 +85,9 @@ def generate_report(entry: Entry, template: str, output_dir: str) -> None:
 	}
 	doc.render(context)
 	doc.save(f'{output_dir}/{entry.new_id}.docx')
+
+	# doc = Document(f'{output_dir}/{entry.new_id}.docx')
+
 	print(f'[*] Generated report for {entry.new_id} ({entry.student_name})')
 
 

@@ -1,2 +1,3 @@
 docxtpl
 openpyxl
+python-docx
