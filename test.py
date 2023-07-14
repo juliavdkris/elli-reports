@@ -5,7 +5,9 @@ from pprint import pprint
 
 
 if __name__ == '__main__':
-	doc = load('original/template.odt')
-	tables = doc.getElementsByType(Table)
+	doc = load('original/demo.odt')
 
-	pprint([list(map(lambda c: c.attributes, t.childNodes)) for t in tables])
+	charts = [obj for obj in doc.childobjects if obj.getMediaType() == 'application/vnd.oasis.opendocument.chart']
+	pprint(charts)
+
+	pass
