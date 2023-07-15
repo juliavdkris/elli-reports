@@ -52,16 +52,20 @@ def write_chart(doc: OpenDocument, index: int, data: ChartData) -> None:
 		for cell, new_cell in zip(row.getElementsByType(TableCell), new_row):
 			if new_cell.type == 'float' and len(cell.attributes) >= 2 and cell.getAttribute('value') != new_cell.value:
 				# TODO: also edit the text value?
+				old_value = cell.getAttribute('value')
 				cell.setAttribute('value', new_cell.value)
+				cell.childNodes[0].childNodes[0].data = new_cell.value
+				print(f'Changed {old_value} to {new_cell.value}')
 	doc.save('original/template2.odt')
 
 
 if __name__ == '__main__':
 	doc = load('original/template2.odt')
 
-	pprint(dump_all_charts(doc))
+	# pprint(dump_all_charts(doc))
 
-	# data = dump_chart(doc, 0)
-	# pprint(data)
-	# data[1][2].value = '999'
-	# write_chart(doc, 0, data)
+	data = dump_chart(doc, 0)
+	pprint(data)
+	if data[1][2].value:
+		data[1][2].value = str(float(data[1][2].value) + 1)
+	write_chart(doc, 0, data)
