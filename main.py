@@ -92,5 +92,10 @@ def generate_report(entry: Entry, template: str, output_dir: str) -> None:
 
 
 if __name__ == '__main__':
-	for entry in parse_sheet_entries(SPREADSHEET):
-		generate_report(entry, TEMPLATE, OUTPUT_DIR)
+	doc = Document('original/PersonalizedReport_DraftV6.docx')
+
+	for i, p in enumerate(doc.paragraphs):
+		print(i, p.text)
+
+	# for entry in parse_sheet_entries(SPREADSHEET):
+		# generate_report(entry, TEMPLATE, OUTPUT_DIR)
