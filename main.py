@@ -1,8 +1,8 @@
 import openpyxl
 from docxtpl import DocxTemplate
 from docx_charts import Document
+
 import logging
-import os
 from concurrent.futures import ProcessPoolExecutor
 
 
@@ -46,6 +46,12 @@ def parse_sheet_entries(filename: str) -> list[Entry]:
 	return entries
 
 
+def to_valid_variable_name(s: str) -> str:
+	s = s.replace('/', '_')  # Most of this script uses slashes as delimiter, but those aren't allowed in variable names
+	s = ''.join([w if i == 0 else w.capitalize() for i, w in enumerate(s.split(' '))])  # Convert spaces to camelCase
+	return s
+
+
 def underscores_to_dict(strings: dict[str, float|None]) -> dict[str, dict[str, dict[str, float|None]]]:
 	'''
 	Example input: {'num/a/student/1': 1, 'num/a/student/2': 2, 'num/a/mean/1': 3, 'num/a/mean/2': 4, 'num/c/1': 10, 'num/c/2': 20, 'num/c/3': 30}
@@ -77,7 +83,7 @@ def generate_report(entry: Entry, template: str, output_dir: str) -> None:
 	# --> Stage 1: replace text in template
 	filename = f'{output_dir}/{entry.get("new_id")}.docx'
 	doc = DocxTemplate(template)
-	context = {k: round(v, 2) if isinstance(v, float) else v for k, v in entry.items()}
+	context = {to_valid_variable_name(k): round(v, 2) if isinstance(v, float) else v for k, v in entry.items()}
 	doc.render(context)
 	doc.save(filename)
 	logging.debug(f'    [*] Created string-replaced document for {entry.get("new_id")} ({entry.get("student_name")})')
