@@ -2,14 +2,16 @@ import openpyxl
 from docxtpl import DocxTemplate
 from docx_charts import Document
 import logging
-from pprint import pprint
+import os
+from concurrent.futures import ThreadPoolExecutor
 
 
 SPREADSHEET = 'original/PersRep_Data Pseud.xlsx'
 TEMPLATE = 'original/template.docx'
 OUTPUT_DIR = 'out'
+MULTI_THREADING = True
 
-logging.basicConfig(level=logging.DEBUG, format='%(message)s')
+logging.basicConfig(level=logging.INFO, format='%(message)s')
 
 Entry = dict[str, str|float|None]
 
@@ -26,6 +28,7 @@ def parse_sheet_entries(filename: str) -> list[Entry]:
 	sids = list(student_identification.iter_rows(min_row=2, max_row=student_identification.max_row, values_only=True))
 	for i, (row, sid) in enumerate(zip(rows, sids)):
 		entry: Entry = {}
+		#! WARNING: this assumes that the columns in the main sheet are in the same order as in the studenet identification sheet
 		for col, val in zip(cols, row+sid):
 			if col is None:
 				continue
@@ -78,7 +81,7 @@ def generate_report(entry: Entry, template: str, output_dir: str) -> None:
 	context = {k: round(v, 2) if isinstance(v, float) else v for k, v in entry.items()}
 	doc.render(context)
 	doc.save(filename)
-	logging.info(f'[*] Generated report for {entry.get("new_id")} ({entry.get("student_name")})')
+	logging.debug(f'    [*] Created string-replaced document for {entry.get("new_id")} ({entry.get("student_name")})')
 
 	# --> Stage 2: update charts in generated report
 	doc = Document(filename)
@@ -97,7 +100,16 @@ def generate_report(entry: Entry, template: str, output_dir: str) -> None:
 	doc.save(filename)
 	logging.debug(f'    [*] Updated charts for {entry.get("new_id")} ({entry.get("student_name")})')
 
+	logging.info(f'[*] Generated report for {entry.get("new_id")} ({entry.get("student_name")})')
+
 
 if __name__ == '__main__':
-	for entry in parse_sheet_entries(SPREADSHEET):
-		generate_report(entry, TEMPLATE, OUTPUT_DIR)
+	entries = parse_sheet_entries(SPREADSHEET)
+
+	if MULTI_THREADING:
+		with ThreadPoolExecutor(os.cpu_count()) as executor:
+			for entry in entries:
+				executor.submit(generate_report, entry, TEMPLATE, OUTPUT_DIR)
+	else:
+		for entry in entries:
+			generate_report(entry, TEMPLATE, OUTPUT_DIR)
