@@ -1,12 +1,15 @@
 import openpyxl
 from docxtpl import DocxTemplate
 from docx_charts import Document
+import logging
 from pprint import pprint
+
 
 SPREADSHEET = 'original/PersRep_Data Pseud.xlsx'
 TEMPLATE = 'original/template.docx'
 OUTPUT_DIR = 'out'
 
+logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
 Entry = dict[str, str|float|None]
 
@@ -30,13 +33,13 @@ def parse_sheet_entries(filename: str) -> list[Entry]:
 				entry[col] = None
 				continue
 			if entry.get(col) and entry[col] != str(val):
-				print(f'[!] Duplicate column name with different values not allowed: {col} on row {i+1} ({entry[col]} != {val})')
+				logging.error(f'[!] Duplicate column name with different values not allowed: {col} on row {i+1} ({entry[col]} != {val})')
 				exit(1)
 			entry[col] = float(str(val)) if col.startswith('num_') else str(val)
 		entries.append(entry)
 
 	if len(entries) < len(rows):
-		print(f'[!] No identification was found for {len(rows) - len(sids)}/{len(rows)} students')
+		logging.warning(f'[!] No identification was found for {len(rows) - len(sids)}/{len(rows)} students')
 
 	return entries
 
@@ -46,6 +49,12 @@ def underscores_to_dict(strings: dict[str, float]) -> dict[str, dict[str, dict[s
 	Example input: {'num/a/student/1': 1, 'num/a/student/2': 2, 'num/a/mean/1': 3, 'num/a/mean/2': 4, 'num/c/1': 10, 'num/c/2': 20, 'num/c/3': 30}
 	Example output: {'a': {'student': {1: 1, 2: 2}, 'mean': {1: 3, 2: 4}}, 'c': {1: 10, 2: 20, 3: 30}
 	'''
+
+	# Terminology.:
+	# 	- chart: the name of the metric, e.g. 'ce' for 'cognitive engagement'
+	# 	- series: the row of entries, e.g. 'My score' or 'Total score'
+	# 	- category: the column of entries, e.g. 'Week1', 'Week2'
+
 	result: dict[str, dict[str, dict[str, float]]] = {}
 	for key, value in strings.items():
 		if not key.startswith('num/'):
@@ -63,26 +72,29 @@ def underscores_to_dict(strings: dict[str, float]) -> dict[str, dict[str, dict[s
 
 
 def generate_report(entry: Entry, template: str, output_dir: str) -> None:
-	# Stage 1: replace text in template
+	# --> Stage 1: replace text in template
 	filename = f'{output_dir}/{entry.get("new_id")}.docx'
 	doc = DocxTemplate(template)
 	context = {k: round(v, 2) if isinstance(v, float) else v for k, v in entry.items()}
 	doc.render(context)
 	doc.save(filename)
-	print(f'[*] Generated report for {entry.get("new_id")} ({entry.get("student_name")})')
+	logging.info(f'[*] Generated report for {entry.get("new_id")} ({entry.get("student_name")})')
 
-	# Stage 2: update charts in generated report
+	# --> Stage 2: update charts in generated report
 	doc = Document(filename)
-	nums = underscores_to_dict({k: v for k, v in entry.items() if k.startswith('num/') if isinstance(v, float)})
-	for key, value in nums.items():
-		chart = doc.charts_by_name(key)[0]
+
+	# For each category of data (of an entry in the spreadsheet), update the corresponding chart in the generated report
+	categories = underscores_to_dict({k: float(v) for k, v in entry.items() if k.startswith('num/') if isinstance(v, str)})
+	for chart_name, value in categories.items():
+		chart = doc.charts_by_name(chart_name)[0]
 		data = chart.data()
 		for series_name, new_series in value.items():
 			for category, new_value in new_series.items():
 				data[series_name][category] = new_value
+				logging.debug(f'    [*] Updated chart data: {chart_name} ({series_name} -> {category} = {new_value})')
 		chart.write(data)
 	doc.save(filename)
-	print(f'    [*] Updated charts for {entry.get("new_id")} ({entry.get("student_name")})')
+	logging.debug(f'    [*] Updated charts for {entry.get("new_id")} ({entry.get("student_name")})')
 
 
 if __name__ == '__main__':
