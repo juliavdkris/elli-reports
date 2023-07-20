@@ -44,7 +44,7 @@ def parse_sheet_entries(filename: str) -> list[Entry]:
 	return entries
 
 
-def underscores_to_dict(strings: dict[str, float]) -> dict[str, dict[str, dict[str, float]]]:
+def underscores_to_dict(strings: dict[str, float|None]) -> dict[str, dict[str, dict[str, float|None]]]:
 	'''
 	Example input: {'num/a/student/1': 1, 'num/a/student/2': 2, 'num/a/mean/1': 3, 'num/a/mean/2': 4, 'num/c/1': 10, 'num/c/2': 20, 'num/c/3': 30}
 	Example output: {'a': {'student': {1: 1, 2: 2}, 'mean': {1: 3, 2: 4}}, 'c': {1: 10, 2: 20, 3: 30}
@@ -55,7 +55,7 @@ def underscores_to_dict(strings: dict[str, float]) -> dict[str, dict[str, dict[s
 	# 	- series: the row of entries, e.g. 'My score' or 'Total score'
 	# 	- category: the column of entries, e.g. 'Week1', 'Week2'
 
-	result: dict[str, dict[str, dict[str, float]]] = {}
+	result: dict[str, dict[str, dict[str, float|None]]] = {}
 	for key, value in strings.items():
 		if not key.startswith('num/'):
 			continue
@@ -84,7 +84,8 @@ def generate_report(entry: Entry, template: str, output_dir: str) -> None:
 	doc = Document(filename)
 
 	# For each category of data (of an entry in the spreadsheet), update the corresponding chart in the generated report
-	categories = underscores_to_dict({k: float(v) for k, v in entry.items() if k.startswith('num/') if isinstance(v, str)})
+	categories = underscores_to_dict({k: float(v) if isinstance(v, str) else None
+										for k, v in entry.items() if k.startswith('num/')})
 	for chart_name, value in categories.items():
 		chart = doc.charts_by_name(chart_name)[0]
 		data = chart.data()
