@@ -3,13 +3,12 @@ from docxtpl import DocxTemplate
 from docx_charts import Document
 import logging
 import os
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 
 
 SPREADSHEET = 'original/PersRep_Data Pseud.xlsx'
 TEMPLATE = 'original/template.docx'
 OUTPUT_DIR = 'out'
-MULTI_THREADING = True
 
 logging.basicConfig(level=logging.INFO, format='%(message)s')
 
@@ -104,12 +103,6 @@ def generate_report(entry: Entry, template: str, output_dir: str) -> None:
 
 
 if __name__ == '__main__':
-	entries = parse_sheet_entries(SPREADSHEET)
-
-	if MULTI_THREADING:
-		with ThreadPoolExecutor(os.cpu_count()) as executor:
-			for entry in entries:
-				executor.submit(generate_report, entry, TEMPLATE, OUTPUT_DIR)
-	else:
-		for entry in entries:
-			generate_report(entry, TEMPLATE, OUTPUT_DIR)
+	with ProcessPoolExecutor() as executor:
+		for entry in parse_sheet_entries(SPREADSHEET):
+			executor.submit(generate_report, entry, TEMPLATE, OUTPUT_DIR)
