@@ -83,7 +83,7 @@ def generate_report(entry: Entry, template: str, output_dir: str) -> None:
 	# --> Stage 1: replace text in template
 	filename = f'{output_dir}/{entry.get("new_id")}.docx'
 	doc = DocxTemplate(template)
-	context = {to_valid_variable_name(k): round(v, 2) if isinstance(v, float) else v for k, v in entry.items()}
+	context = {to_valid_variable_name(k): round(float(v), 2) if v and k.startswith('num/') else v for k, v in entry.items()}
 	doc.render(context)
 	doc.save(filename)
 	logging.debug(f'    [*] Created string-replaced document for {entry.get("new_id")} ({entry.get("student_name")})')
