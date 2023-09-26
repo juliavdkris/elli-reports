@@ -599,7 +599,4 @@
 			<a:endParaRPr lang="nl-NL" />
 		</a:p>
 	</c:txPr>
-	<c:externalData r:id="rId3">
-		<c:autoUpdate val="0" />
-	</c:externalData>
 </c:chartSpace>

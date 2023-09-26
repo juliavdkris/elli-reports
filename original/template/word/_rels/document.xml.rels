@@ -9,9 +9,6 @@
 	<Relationship Id="rId26"
 		Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 		Target="media/image11.png" />
-	<Relationship Id="rId3"
-		Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"
-		Target="styles.xml" />
 	<Relationship Id="rId21"
 		Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 		Target="media/image6.svg" />
