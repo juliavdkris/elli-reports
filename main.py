@@ -27,7 +27,7 @@ def parse_sheet_entries(filename: str) -> list[Entry]:
 	sids = list(student_identification.iter_rows(min_row=2, max_row=student_identification.max_row, values_only=True))
 	for i, (row, sid) in enumerate(zip(rows, sids)):
 		entry: Entry = {}
-		#! WARNING: this assumes that the columns in the main sheet are in the same order as in the studenet identification sheet
+		#! WARNING: this assumes that the columns in the main sheet are in the same order as in the student identification sheet
 		for col, val in zip(cols, row+sid):
 			if col is None:
 				continue
